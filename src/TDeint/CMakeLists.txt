@@ -16,7 +16,33 @@ project(${ProjectName} LANGUAGES CXX)
 
 Include("Files.cmake")
 
+# Helper function to apply SIMD flags based on filename suffixes
+function(apply_simd_flags_to_target TARGET_NAME SOURCES_LIST)
+    foreach(FILE ${SOURCES_LIST})
+        if(FILE MATCHES ".*_avx2\\.cpp$")
+            if(MSVC)
+                set_source_files_properties(${FILE} PROPERTIES COMPILE_FLAGS "/arch:AVX2")
+            else()
+                set_source_files_properties(${FILE} PROPERTIES COMPILE_FLAGS "-mavx2 -mfma")
+            endif()
+        elseif(FILE MATCHES ".*_avx\\.cpp$")
+            if(MSVC)
+                set_source_files_properties(${FILE} PROPERTIES COMPILE_FLAGS "/arch:AVX")
+            else()
+                set_source_files_properties(${FILE} PROPERTIES COMPILE_FLAGS "-mavx")
+            endif()
+        elseif(FILE MATCHES ".*_sse41\\.cpp$")
+            if(NOT MSVC)
+                set_source_files_properties(${FILE} PROPERTIES COMPILE_FLAGS "-msse4.1")
+            endif()
+            # MSVC doesn't have a specific /arch:SSE4.1; /arch:SSE2 is usually the default
+        endif()
+    endforeach()
+endfunction()
+
+
 add_library(${PluginName} SHARED ${TDeint_Sources})
+apply_simd_flags_to_target(${PluginName} "${TDeint_Sources}")
 
 set_target_properties(${PluginName} PROPERTIES "OUTPUT_NAME" "${PluginName}")
 if (MINGW)
@@ -45,47 +71,6 @@ foreach(FILE ${TDeint_Sources})
 
   source_group("${GROUP}" FILES "${FILE}")
 endforeach()
-
-if (MSVC_IDE)
-  IF(CLANG_IN_VS STREQUAL "1")
-      # special AVX option for source files with *_avx.cpp pattern
-      file(GLOB_RECURSE SRCS_AVX "*_avx.cpp")
-      set_source_files_properties(${SRCS_AVX} PROPERTIES COMPILE_FLAGS " -mavx ")
-
-      # special AVX2 option for source files with *_avx2.cpp pattern
-      file(GLOB_RECURSE SRCS_AVX2 "*_avx2.cpp")
-      set_source_files_properties(${SRCS_AVX2} PROPERTIES COMPILE_FLAGS " -mavx2 -mfma ")
-
-      # special AVX512 option for source files with *_avx512.cpp pattern
-      file(GLOB_RECURSE SRCS_AVX512 "*_avx512.cpp")
-      set_source_files_properties(${SRCS_AVX512} PROPERTIES COMPILE_FLAGS " -mavx512f -mavx512bw ")
-  ELSE()
-      # special AVX option for source files with *_avx.cpp pattern
-      file(GLOB_RECURSE SRCS_AVX "*_avx.cpp")
-      set_source_files_properties(${SRCS_AVX} PROPERTIES COMPILE_FLAGS " /arch:AVX ")
-
-      # special AVX2 option for source files with *_avx2.cpp pattern
-      file(GLOB_RECURSE SRCS_AVX2 "*_avx2.cpp")
-      set_source_files_properties(${SRCS_AVX2} PROPERTIES COMPILE_FLAGS " /arch:AVX2 ")
-
-      # special AVX512 option for source files with *_avx512.cpp pattern
-      file(GLOB_RECURSE SRCS_AVX512 "*_avx512.cpp")
-      set_source_files_properties(${SRCS_AVX512} PROPERTIES COMPILE_FLAGS " /arch:AVX512 ")
-  ENDIF()
-else()
-  # special AVX option for source files with *_avx.cpp pattern
-  file(GLOB_RECURSE SRCS_AVX "*_avx.cpp")
-  set_source_files_properties(${SRCS_AVX} PROPERTIES COMPILE_FLAGS " -mavx ")
-
-  # special AVX2 option for source files with *_avx2.cpp pattern
-  file(GLOB_RECURSE SRCS_AVX2 "*_avx2.cpp")
-  set_source_files_properties(${SRCS_AVX2} PROPERTIES COMPILE_FLAGS " -mavx2 -mfma ")
-
-  # special AVX512 option for source files with *_avx512.cpp pattern
-  file(GLOB_RECURSE SRCS_AVX512 "*_avx512.cpp")
-  set_source_files_properties(${SRCS_AVX512} PROPERTIES COMPILE_FLAGS " -mavx512f -mavx512bw ")
-endif()
-
 
 # Specify include directories
 target_link_libraries(${ProjectName})
