@@ -44,9 +44,11 @@
 #define TDEINT_DATE "05/08/2020"
 #define TDEINT_VERSION "v1.4"
 #define TDEINT_DATE "05/12/2020"
-*/
 #define TDEINT_VERSION "v1.5"
 #define TDEINT_DATE "05/13/2020"
+*/
+#define TDEINT_VERSION "v1.11"
+#define TDEINT_DATE "20260304"
 
 void dispatch_smartELADeintPlanar(PVideoFrame& dst, PVideoFrame& mask, PVideoFrame& prv, PVideoFrame& src, PVideoFrame& nxt, const VideoInfo& vi);
 template<typename pixel_t, int bits_per_pixel>

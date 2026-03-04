@@ -298,6 +298,81 @@ template void do_buildABSDiffMask2<uint16_t>(const uint8_t* prvp, const uint8_t*
 // This C code replaces some thousand line of copy pasted original inline asm lines
 // (plus handles 10+bits)
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Scalar fallback — exact replica of AnalyzeOnePixel<pixel_t, bpp, DIST=1>
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename pixel_t>
+static inline void AnalyzeOnePixel_D1(
+  uint8_t* dstp,
+  const pixel_t* dppp, const pixel_t* dpp,
+  const pixel_t* dp,
+  const pixel_t* dpn, const pixel_t* dpnn,
+  int x, int y, int Width, int Height, int C3, int C19)
+{
+  if (dp[x] <= C3) return;
+  if (dp[x - 1] <= C3 && dp[x + 1] <= C3 &&
+    dpp[x - 1] <= C3 && dpp[x] <= C3 && dpp[x + 1] <= C3 &&
+    dpn[x - 1] <= C3 && dpn[x] <= C3 && dpn[x + 1] <= C3)
+    return;
+
+  dstp[x]++;
+  if (dp[x] <= C19) return;
+
+  int edi = 0;
+  if (dpp[x - 1] > C19) edi++;
+  if (dpp[x] > C19) edi++;
+  if (dpp[x + 1] > C19) edi++;
+  int upper = (edi != 0) ? 1 : 0;
+  if (dp[x - 1] > C19) edi++;
+  if (dp[x + 1] > C19) edi++;
+  int esi = edi;
+  if (dpn[x - 1] > C19) edi++;
+  if (dpn[x] > C19) edi++;
+  if (dpn[x + 1] > C19) edi++;
+  if (edi <= 2) return;
+
+  int count = edi;
+  // lower carries into the wide scan: if count!=esi, at least one dpn pixel
+  // in the 3x3 was > C19, so lower is already 1 before the wide scan.
+  // upper is NOT reset here — if count==esi (no dpn contribution) upper
+  // retains its value from the 3x3 ring and the wide scan only ORs more in.
+  // If count!=esi and upper!=0 we return early; if we fall through, upper
+  // was 0, so the wide scan starts correctly with upper==0 either way.
+  int lower = 0;
+  if (count != esi) {
+    lower = 1;
+    if (upper != 0) { dstp[x] += 2; return; }
+  }
+
+  // Wide scan: upper and lower are accumulated (never cleared) from here.
+  int startx = (x < 4) ? 0 : x - 4;
+  int stopx = (x + 5 > Width) ? Width : x + 5;
+  int upper2 = 0, lower2 = 0;
+
+  if (y != 2) {
+    for (int s = startx; s < stopx; s++)
+      if (dppp[s] > C19) { upper2 = 1; break; }
+  }
+  for (int s = startx; s < stopx; s++) {
+    if (dpp[s] > C19) upper = 1;
+    if (dpn[s] > C19) lower = 1;
+    if (upper && lower) break;
+  }
+  if (y != Height - 4) {
+    for (int s = startx; s < stopx; s++)
+      if (dpnn[s] > C19) { lower2 = 1; break; }
+  }
+
+  if (upper == 0) {
+    if (lower == 0 || lower2 == 0) { if (count > 4) dstp[x] += 4; }
+    else { dstp[x] += 2; }
+  }
+  else {
+    if (lower != 0 || upper2 != 0) { dstp[x] += 2; }
+    else { if (count > 4) dstp[x] += 4; }
+  }
+}
+
 // distance of neighboring pixels:
 // 1 for planar any
 // 2 for YUY2 luma
@@ -423,8 +498,8 @@ static AVS_FORCEINLINE void AnalyzeOnePixel(uint8_t* dstp,
 }
 
 // Common TDeint and TFM version
-template<typename pixel_t, int bits_per_pixel>
-void AnalyzeDiffMask_Planar(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int tpitch, int Width, int Height)
+template<typename pixel_t>
+void AnalyzeDiffMask_Planar(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int tpitch, int Width, int Height, int bits_per_pixel)
 {
   tpitch /= sizeof(pixel_t);
   const pixel_t* tbuffer = reinterpret_cast<const pixel_t*>(tbuffer8);
@@ -434,9 +509,15 @@ void AnalyzeDiffMask_Planar(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int
   const pixel_t* dpn = tbuffer + tpitch * 2;
   const pixel_t* dpnn = tbuffer + tpitch * 3;
 
+  if constexpr (sizeof(pixel_t) == 1)
+    bits_per_pixel = 8; // quasi constexpr
+
+  const int C3 = 3 << (bits_per_pixel - 8);
+  const int C19 = 19 << (bits_per_pixel - 8);
+
   for (int y = 2; y < Height - 2; y += 2) {
     for (int x = 1; x < Width - 1; x++) {
-      AnalyzeOnePixel<pixel_t, bits_per_pixel, 1>(dstp, dppp, dpp, dp, dpn, dpnn, x, y, Width, Height);
+      AnalyzeOnePixel_D1<pixel_t>(dstp, dppp, dpp, dp, dpn, dpnn, x, y, Width, Height, C3, C19);
     }
     dppp += tpitch;
     dpp += tpitch;
@@ -446,13 +527,10 @@ void AnalyzeDiffMask_Planar(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int
     dstp += dst_pitch;
   }
 }
-// instantiate
-template void AnalyzeDiffMask_Planar<uint8_t,8>(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int tpitch, int Width, int Height);
-template void AnalyzeDiffMask_Planar<uint16_t, 10>(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int tpitch, int Width, int Height);
-template void AnalyzeDiffMask_Planar<uint16_t, 12>(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int tpitch, int Width, int Height);
-template void AnalyzeDiffMask_Planar<uint16_t, 14>(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int tpitch, int Width, int Height);
-template void AnalyzeDiffMask_Planar<uint16_t, 16>(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int tpitch, int Width, int Height);
 
+// instantiate
+template void AnalyzeDiffMask_Planar<uint8_t>(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int tpitch, int Width, int Height, int bits_per_pixel);
+template void AnalyzeDiffMask_Planar<uint16_t>(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer8, int tpitch, int Width, int Height, int bits_per_pixel);
 // TDeint and TFM version
 void AnalyzeDiffMask_YUY2(uint8_t* dstp, int dst_pitch, uint8_t* tbuffer, int tpitch, int Width, int Height, bool mChroma)
 {

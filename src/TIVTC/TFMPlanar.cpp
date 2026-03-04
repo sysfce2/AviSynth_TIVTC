@@ -27,6 +27,8 @@
 #include "TFM.h"
 #include "TFMasm.h"
 #include "TCommonASM.h"
+#include "AnalyzeDiffMask_sse41.h"
+#include "AnalyzeDiffMask_avx2.h"
 #include <algorithm>
 
 
@@ -449,13 +451,24 @@ void TFM::buildDiffMapPlane_Planar(const uint8_t *prvp, const uint8_t *nxtp,
   int Width, int tpitch, int bits_per_pixel)
 {
   buildABSDiffMask<pixel_t>(prvp - prv_pitch, nxtp - nxt_pitch, prv_pitch, nxt_pitch, tpitch, Width, Height >> 1);
-  switch (bits_per_pixel) {
-  case 8: AnalyzeDiffMask_Planar<uint8_t, 8>(dstp, dst_pitch, tbuffer.get(), tpitch, Width, Height); break;
-  case 10: AnalyzeDiffMask_Planar<uint16_t, 10>(dstp, dst_pitch, tbuffer.get(), tpitch, Width, Height); break;
-  case 12: AnalyzeDiffMask_Planar<uint16_t, 12>(dstp, dst_pitch, tbuffer.get(), tpitch, Width, Height); break;
-  case 14: AnalyzeDiffMask_Planar<uint16_t, 14>(dstp, dst_pitch, tbuffer.get(), tpitch, Width, Height); break;
-  case 16: AnalyzeDiffMask_Planar<uint16_t, 16>(dstp, dst_pitch, tbuffer.get(), tpitch, Width, Height); break;
+
+  using AnalyzeFuncPtr = void (*)(uint8_t*, int, uint8_t*, int, int, int, int);
+  AnalyzeFuncPtr targetFunc = nullptr;
+
+  if (cpuFlags & CPUF_AVX2) {
+    targetFunc = (bits_per_pixel == 8) ? AnalyzeDiffMask_Planar_AVX2<uint8_t> : AnalyzeDiffMask_Planar_AVX2<uint16_t>;
   }
+  else if (cpuFlags & CPUF_SSE4_1) {
+    targetFunc = (bits_per_pixel == 8) ? AnalyzeDiffMask_Planar_SSE41<uint8_t> : AnalyzeDiffMask_Planar_SSE41<uint16_t>;
+  }
+  else {
+    // Scalar fallback
+    targetFunc = (bits_per_pixel == 8) ? AnalyzeDiffMask_Planar<uint8_t> : AnalyzeDiffMask_Planar<uint16_t>;
+  }
+
+  // One single call
+  targetFunc(dstp, dst_pitch, tbuffer.get(), tpitch, Width, Height, bits_per_pixel);
+
 }
 
 // instantiate

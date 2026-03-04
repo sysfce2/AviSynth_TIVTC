@@ -3124,6 +3124,37 @@ TFM::TFM(PClip _child, int _order, int _field, int _mode, int _PP, const char* _
   // 16 would be is enough for sse2 but maybe we'll do AVX2?
   // unique_ptr!
 
+  // tbuffer holds the absolute-difference rows consumed by AnalyzeDiffMask.
+  // It is sized for the worst case: the luma plane (width * tpitchy bytes per
+  // row).  Subsampled chroma planes are strictly smaller and reuse this same
+  // buffer without reallocation.
+  //
+  // For SIMD the five sliding row pointers are initialised as:
+  //
+  //   dppp = tbuffer - tpitch        (1 row before the buffer — slot 0 of the
+  //                                   BoolRowRing is zeroed instead of built
+  //                                   from this address to avoid reading before
+  //                                   the allocation)
+  //   dpp  = tbuffer + tpitch * 0
+  //   dp   = tbuffer + tpitch * 1
+  //   dpn  = tbuffer + tpitch * 2
+  //   dpnn = tbuffer + tpitch * 3    ← starts 3 rows in
+  //
+  // Each y += 2 iteration advances all five pointers by tpitch.
+  // The loop runs for (Height - 4) / 2 iterations (y = 2, 4, ..., Height-4),
+  // so dpnn reaches at most:
+  //
+  //   tbuffer + tpitch * (3 + (Height - 4) / 2 - 1)
+  //   = tbuffer + tpitch * (Height / 2 - 1 + 1)
+  //   = tbuffer + tpitch * (Height / 2)     [for even Height, 0-based last row]
+  //
+  // i.e. exactly row index (Height/2 - 1), the last row of the allocation,
+  // because brows.rotate() — which is the only call that reads u8_dpnn — is
+  // skipped on the final iteration via the guard:
+  //
+  //   if (y + 2 < Height - 2) brows.rotate(u8_dpnn, Width);
+  //
+  // Therefore Height/2 rows are sufficient with no extra guard rows needed.
   const int numElements = (vi.height >> 1) * tpitchy;
   uint8_t* buffer = static_cast<uint8_t*>(_aligned_malloc(numElements * sizeof(uint8_t), ALIGN_BUF));
   tbuffer.reset(buffer);

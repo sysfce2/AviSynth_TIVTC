@@ -1,0 +1,30 @@
+/*
+**   Helper methods for TIVTC and TDeint
+**
+**   Copyright (C)2026 pinterf
+**
+**   This program is free software; you can redistribute it and/or modify
+**   it under the terms of the GNU General Public License as published by
+**   the Free Software Foundation; either version 2 of the License, or
+**   (at your option) any later version.
+**
+**   This program is distributed in the hope that it will be useful,
+**   but WITHOUT ANY WARRANTY; without even the implied warranty of
+**   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**   GNU General Public License for more details.
+**
+**   You should have received a copy of the GNU General Public License
+**   along with this program; if not, write to the Free Software
+**   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+#include <cstdint>
+
+#include "AnalyzeDiffMask_avx2.h"
+
+#define INCLUDE_PROCESSROW_AVX2
+#include "AnalyzeDiffMask_SIMD.hpp"
+// Explicit instantiations
+template void AnalyzeDiffMask_Planar_AVX2<uint8_t>(uint8_t*, int, uint8_t*, int, int, int, int);
+template void AnalyzeDiffMask_Planar_AVX2<uint16_t>(uint8_t*, int, uint8_t*, int, int, int, int);
+#undef INCLUDE_PROCESSROW_AVX2
+
