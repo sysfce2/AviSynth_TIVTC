@@ -119,8 +119,17 @@ PVideoFrame __stdcall RequestLinear::GetFrame(int n, IScriptEnvironment *env)
     last_request = n;
     return findCachedFrame(n, env);
   }
-  if (last_request - n < clim)
-    return findCachedFrame(n, env);
+  if (last_request - n < clim) {
+    // Check if actually cached; if not, fill the gap
+    PVideoFrame cached = findCachedFrameSafe(n, env);
+    if (!cached) {
+      for (int i = std::max(0, n - elim); i <= n; ++i)
+        insertCacheFrame(i, env);
+      cached = findCachedFrame(n, env); // will throw on miss, same as before
+    }
+    last_request = n; // v1.5
+    return cached;
+  }
   if (n <= rlim || rall)
   {
     for (int i = 0; i <= n; ++i)
@@ -208,7 +217,7 @@ void RequestLinear::clearCache(int n, IScriptEnvironment *env)
   start_pos = 0;
 }
 
-PVideoFrame RequestLinear::findCachedFrame(int pframe, IScriptEnvironment *env)
+PVideoFrame RequestLinear::findCachedFrameSafe(int pframe, IScriptEnvironment* env)
 {
   for (int i = 0; i < clim; ++i)
   {
@@ -222,8 +231,20 @@ PVideoFrame RequestLinear::findCachedFrame(int pframe, IScriptEnvironment *env)
       return frames[i]->data;
     }
   }
-  env->ThrowError("RequestLinear:  internal error (frame not cached)!");
-  return NULL;
+  if (debug)
+  {
+    sprintf(buf, "RequestLinear:  cached frame not found %d\n", pframe);
+    OutputDebugString(buf);
+  }
+  return nullptr;
+}
+
+PVideoFrame RequestLinear::findCachedFrame(int pframe, IScriptEnvironment* env)
+{
+  PVideoFrame result = findCachedFrameSafe(pframe, env);
+  if (!result)
+    env->ThrowError("RequestLinear:  internal error (frame not cached)!");
+  return result;
 }
 
 void RequestLinear::insertCacheFrame(int pframe, IScriptEnvironment *env)

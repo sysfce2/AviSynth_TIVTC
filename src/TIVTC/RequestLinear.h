@@ -25,7 +25,7 @@
 
 #include <stdio.h>
 #include "internal.h"
-#define VERSION "v1.4"
+#define VERSION "v1.5"
 
 class RFrame
 {
@@ -47,6 +47,7 @@ private:
   int getCachePos(int n);
   void insertCacheFrame(int pframe, IScriptEnvironment *env);
   PVideoFrame findCachedFrame(int pframe, IScriptEnvironment *env);
+  PVideoFrame findCachedFrameSafe(int pframe, IScriptEnvironment* env);
   void clearCache(int n, IScriptEnvironment *env);
   PVideoFrame requestFrame(int n, IScriptEnvironment *env);
 
