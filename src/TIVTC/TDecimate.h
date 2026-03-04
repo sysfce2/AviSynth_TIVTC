@@ -39,7 +39,7 @@
 
 #define VERSION "v1.0.12"
 
-// Custom deleter for _aligned_free, becasue it's a macro
+// Custom deleter for _aligned_free, because it's a macro
 // and cannot be passed as a custom deleter address
 static void AlignedDeleter(void *ptr) {
   _aligned_free(ptr);
