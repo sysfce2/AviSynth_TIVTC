@@ -1,5 +1,10 @@
 ## TDeint
+**v1.11 (20260304) - pinterf**
+
++ Add SSE4.1 and AVX2 implementation for slow=1 and slow=2 (buildDiffMapPlane_Planar from TDeinterlace::subtractFields1/2) 
+
 **v1.10 (20250519) - pinterf**
+
 - Fix #57: TDeint emtn parameter to expect the same frame count as the original for mode 1.
 
 **v1.9 (20231209) - pinterf**
