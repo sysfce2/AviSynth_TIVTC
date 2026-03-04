@@ -1,5 +1,9 @@
 ## TIVTC
 
+**v1.0.31 (20260304)
+- Optimize slow > 0: SSE4.1 and AVX2 implementation (buildDiffMapPlane_Planar from TFM::compareFieldsSlow)
+- Fix #20: RequestLinear internal error (jump forward in an editor, step back 4 times)
+
 **v1.0.30 (20251210)
 - TDecimate: add dclip parameter - a denoised clip for metrics calculation only.
   See #27: https://github.com/pinterf/TIVTC/issues/27

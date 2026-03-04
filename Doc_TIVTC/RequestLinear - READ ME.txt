@@ -1,6 +1,6 @@
 
 
-                       RequestLinear v1.4  -  HELP FILE  (20201020)
+                       RequestLinear v1.5  -  HELP FILE  (20260304)
 
 
 GENERAL INFO:
@@ -132,6 +132,11 @@ EXAMPLE SCENARIOS:
 
 
 CHANGE LIST:
+
+   v1.5   (20260304)
+
+      - fix: Requestlinear internal error frame not found when jump forward and step back 4 times.
+             Another internal error - frame not in cache. See: https://github.com/pinterf/TIVTC/issues/20
 
    v1.4   (20201020)
 
