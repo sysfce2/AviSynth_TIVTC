@@ -423,6 +423,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\common\AnalyzeDiffMask_avx2.cpp">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='ReleaseXP|Win32'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='ReleaseClang|Win32'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='ReleaseClang|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='ReleaseXP|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <ClCompile Include="..\common\AnalyzeDiffMask_sse41.cpp" />
     <ClCompile Include="..\common\internal.cpp" />
     <ClCompile Include="..\common\TCommonASM.cpp" />
     <ClCompile Include="TDBuf.cpp" />
@@ -434,6 +445,9 @@
     <ClCompile Include="TSwitch.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\AnalyzeDiffMask_avx2.h" />
+    <ClInclude Include="..\common\AnalyzeDiffMask_SIMD.hpp" />
+    <ClInclude Include="..\common\AnalyzeDiffMask_sse41.h" />
     <ClInclude Include="..\common\internal.h" />
     <ClInclude Include="..\common\TCommonASM.h" />
     <ClInclude Include="..\include\avisynth.h" />

@@ -437,6 +437,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\common\AnalyzeDiffMask_avx2.cpp">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='ReleaseClang|Win32'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='ReleaseClang|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='ReleaseXP|Win32'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='ReleaseXP|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <ClCompile Include="..\common\AnalyzeDiffMask_sse41.cpp" />
     <ClCompile Include="..\common\fixedfonts.cpp" />
     <ClCompile Include="..\common\info.cpp" />
     <ClCompile Include="..\common\internal.cpp" />
@@ -466,6 +477,9 @@
     <ClCompile Include="TFMPlanar.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\AnalyzeDiffMask_avx2.h" />
+    <ClInclude Include="..\common\AnalyzeDiffMask_SIMD.hpp" />
+    <ClInclude Include="..\common\AnalyzeDiffMask_sse41.h" />
     <ClInclude Include="..\common\fixedfonts.h" />
     <ClInclude Include="..\common\info.h" />
     <ClInclude Include="..\common\internal.h" />
